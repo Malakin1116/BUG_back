@@ -136,17 +136,9 @@ export const loginUser = async (payload) => {
   const email = payload.email.toLowerCase(); // Перевести email в нижній регістр
   const user = await UsersCollection.findOne({ email });
   if (!user) throw createHttpError(404, 'User not found');
-
-  // Перевірка, чи email верифікований
-  if (!user.isVerified) {
-    throw createHttpError(403, 'Email is not verified');
-  }
-
   const isEqual = await bcrypt.compare(payload.password, user.password);
   if (!isEqual) throw createHttpError(401, 'Incorrect password');
-
   await SessionsCollection.deleteMany({ userId: user._id });
-
   return await createSession(user._id);
 };
 

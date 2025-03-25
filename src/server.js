@@ -10,7 +10,7 @@ import notFoundHandler from './middlewares/notFoundHandler.js';
 import errorHandler from './middlewares/errorHandler.js';
 import swaggerDocs from './middlewares/swaggerDocs.js';
 
-import waterRouter from './routers/water.js';
+
 
 import { UPLOAD_DIR } from './constants/index.js';
 
@@ -31,7 +31,7 @@ export const startServer = async () => {
       origin: [
         'http://localhost:5173',
         'http://localhost:5174',
-        'https://project-rapid-forge-frontend.vercel.app',
+        'https://nodejs-hw-mongodb-1-vszm.onrender.com',
       ], // Дозволяє доступ з цих доменів
       credentials: true, // Дозволяє передавати cookies та інші приватні дані
     }),
@@ -45,8 +45,6 @@ export const startServer = async () => {
   app.use('/api-docs', swaggerDocs());
 
   app.use('/', router);
-
-  app.use('/water', waterRouter);
 
   app.get('/', (_, res) => {
     res.send('Welcome to the server!');
