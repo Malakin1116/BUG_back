@@ -1,0 +1,24 @@
+type: object
+properties:
+  userId:
+    type: string
+    description: User ID
+    example: '67cc5bb27a2222d660c179f9'
+  accessToken:
+    type: string
+    description: Access token
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
+  refreshToken:
+    type: string
+    description: Refresh token
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
+  accessTokenValidUntil:
+    type: string
+    format: date-time
+    description: Access token expiration date and time
+    example: '2024-03-15T10:30:00Z'
+  refreshTokenValidUntil:
+    type: string
+    format: date-time
+    description: Refresh token expiration date and time
+    example: '2024-03-22T10:30:00Z'

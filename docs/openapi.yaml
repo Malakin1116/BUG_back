@@ -1,0 +1,96 @@
+openapi: 3.1.0
+info:
+  version: 1.0.0
+  title: AquaTrack API
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  description: The AquaTrack API allows users to log their daily water intake, edit or delete records, and track their progress towards a daily hydration goal. Users can view their current day's water consumption and analyze their intake over the month.
+tags:
+  - name: Auth
+    description: |
+      Authentication-related operations, handling user registration, login, verification, and session management.
+      - **Register**: New users can register by providing their email and password.
+      - **Login**: Allows registered users to log in by providing their email and password.
+      - **Verify email**: Users can verify their email address via a token sent during the registration process.
+      - **Logout**: Users can log out from their current session, invalidating their session and tokens.
+      - **Refresh token**: Allows users to refresh their access tokens without re-logging in.
+      - **Request email verification**: Sends a new email verification link to users who need to verify their email address.
+  - name: Users
+    description: |
+      Operations related to user management, including fetching user details, updating user information, and managing user avatars.
+       - **Get user details**: Allows users to retrieve their profile information.
+       - **Update user info**: Users can update their profile settings, including avatar, gender, weight, and daily hydration goal.
+       - **Update avatar**: Users can upload or update their avatar image to represent themselves.
+  - name: Water
+    description: |
+      Operations related to water records, enabling users to log, edit, delete, and track their hydration goals.
+      - **Log water intake**: Users can log their water consumption, specifying the amount of water consumed and the time of intake.
+      - **Edit entries**: Users can update previously logged water intake records.
+      - **Delete entries**: Users can delete a water consumption record.
+      - **Track daily progress**: Users can view their total water consumption for the current day or any previous day, and check if they have met their daily hydration goal.
+      - **View monthly data**: Users can see their water intake records for the entire month, helping them analyze hydration trends and adjust their intake over time.
+servers:
+  - url: https://aqua-track-app.onrender.com
+  - url: http://localhost:3000
+paths:
+  /auth/register:
+    post:
+      $ref: ../swagger/paths/auth/register.yaml
+  /auth/verifycate:
+    post:
+      $ref: ../swagger/paths/auth/verify-request.yaml
+  /auth/verifycate/{token}:
+    get:
+      $ref: ../swagger/paths/auth/verifycate/{token}/verify.yaml
+  /auth/get-oauth-url:
+    get:
+      $ref: ../swagger/paths/auth/get-oauth-url.yaml
+  /auth/confirm-oauth:
+    post:
+      $ref: ../swagger/paths/auth/confirm-oauth.yaml
+  /auth/login:
+    post:
+      $ref: ../swagger/paths/auth/login.yaml
+  /auth/logout:
+    post:
+      $ref: ../swagger/paths/auth/logout.yaml
+  /auth/refresh:
+    $ref: ../swagger/paths/auth/refresh.yaml
+  /auth/send-reset-password-email:
+    post:
+      $ref: ../swagger/paths/auth/send-reset-pwd-email.yaml
+  /auth/reset-password:
+    post:
+      $ref: ../swagger/paths/auth/reset-password.yaml
+  /user/usersCount:
+    get:
+      $ref: ../swagger/paths/user/get.yaml
+  /user/currentUser:
+    get:
+      $ref: ../swagger/paths/user/getUser.yaml
+  /user/update/{id}:
+    patch:
+      $ref: ../swagger/paths/user/{id}/user_update.yaml
+  /user/avatar/{id}:
+    patch:
+      $ref: ../swagger/paths/user/{id}/user_avatar.yaml
+  /water:
+    post:
+      $ref: ../swagger/paths/water/post.yaml
+  /water/{id}:
+    patch:
+      $ref: ../swagger/paths/water/{id}/patch.yaml
+    delete:
+      $ref: ../swagger/paths/water/{id}/delete.yaml
+  /water/today:
+    get:
+      $ref: ../swagger/paths/water/today.yaml
+  /water/month:
+    get:
+      $ref: ../swagger/paths/water/month.yaml
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer

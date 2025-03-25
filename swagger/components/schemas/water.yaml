@@ -1,0 +1,30 @@
+type: object
+required:
+  - date
+  - time
+  - volume
+properties:
+  _id:
+    type: string
+    description: Water record ID
+    example: 67cf23f02f0a65716cfc2002
+  userId:
+    type: string
+    description: User ID
+    example: 67cf170767c430dab2ce8d79
+  date:
+    type: string
+    pattern: '^(\d{4})-(\d{2})-(\d{2})$'
+    description: Date of the water record in the format yyyy-mm-dd
+    example: 2024-12-31
+  time:
+    type: string
+    pattern: '^([01]?[0-9]|2[0-3]):([0-5]?[0-9])$'
+    description: Time of the water record in the format hh:mm
+    example: 23:59
+  volume:
+    type: integer
+    description: Volume of water (in ml)
+    example: 650
+    minimum: 50 # Мінімум 50 мл
+    maximum: 5000 # Максимум 5000 мл

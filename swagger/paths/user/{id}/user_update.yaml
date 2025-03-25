@@ -1,0 +1,68 @@
+summary: Update user details
+description: Updates the user profile, allowing changes to fields such as name, email, gender, weight, and daily water intake goal.
+tags:
+  - Users
+operationId: updateUser
+security:
+  - bearerAuth: []
+parameters:
+  - name: id
+    in: path
+    required: true
+    description: The ID of the user to update
+    schema:
+      type: string
+      example: '67cc5bb27a2222d660c179f9'
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          name:
+            type: string
+            minLength: 3
+            maxLength: 12
+            example: 'JohnDoe'
+          email:
+            type: string
+            format: email
+            example: 'johndoe@example.com'
+          gender:
+            type: string
+            enum: [woman, man]
+            example: 'woman'
+          weight:
+            type: number
+            minimum: 0
+            example: 75
+          dailyNorm:
+            type: number
+            minimum: 500
+            maximum: 15000
+            example: 2000
+responses:
+  '200':
+    description: User profile updated successfully
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            status:
+              type: integer
+              example: 200
+            message:
+              type: string
+              example: 'User successfully updated!'
+            data:
+              $ref: ../../../components/schemas/user.yaml
+  '400':
+    $ref: ../../../components/responses/400.yaml
+  '401':
+    $ref: ../../../components/responses/401.yaml
+  '404':
+    $ref: ../../../components/responses/404.yaml
+  '500':
+    $ref: ../../../components/responses/500.yaml

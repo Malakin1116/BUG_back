@@ -1,0 +1,57 @@
+tags:
+  - Water
+summary: Monthly water intake
+operationId: getWaterMonth
+description: |
+  Retrieves all water intake records for the current month for a logged-in user, grouped by day.
+security:
+  - bearerAuth: []
+parameters:
+  - name: year
+    in: query
+    required: true
+    description: The year for which to fetch water consumption data.
+    schema:
+
+      type: number
+      example: '2025'
+  - name: month
+    in: query
+    required: true
+    description: The month for which to fetch water consumption data.
+    schema:
+      type: number
+      example: '03'
+responses:
+  '200':
+    description: OK! - Everything worked as expected
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - status
+            - message
+            - data
+          properties:
+            status:
+              type: integer
+              example: 200
+            message:
+              type: string
+              example: Water consumption data for requested month retrieved successfully
+            data:
+              type: object
+              required:
+                - data
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: ../../components/schemas/water.yaml
+  '400':
+    $ref: '../../components/responses/400.yaml'
+  '401':
+    $ref: '../../components/responses/401.yaml'
+  '500':
+    $ref: '../../components/responses/500.yaml'

@@ -1,0 +1,50 @@
+tags:
+  - Water
+summary: Today's water intake
+operationId: getWaterToday
+description: |
+  Retrieves all water intake records for the current day for a logged-in user.
+security:
+  - bearerAuth: []
+parameters:
+  - name: date
+    in: query
+    required: true
+    description: The date for which to fetch water consumption data.
+    schema:
+      type: string
+      format: date
+      example: '2025-03-11'
+responses:
+  '200':
+    description: OK! - Everything worked as expected
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - status
+            - message
+            - data
+          properties:
+            status:
+              type: integer
+              example: 200
+            message:
+              type: string
+              example: Water consumption data retrieved successfully
+            data:
+              type: object
+              required:
+                - data
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: ../../components/schemas/water.yaml
+  '400':
+    $ref: '../../components/responses/400.yaml'
+  '401':
+    $ref: '../../components/responses/401.yaml'
+  '500':
+    $ref: '../../components/responses/500.yaml'

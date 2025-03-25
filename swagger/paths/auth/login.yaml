@@ -1,0 +1,62 @@
+tags:
+  - Auth
+summary: Login to the account
+operationId: loginUser
+description: 'Logs in a user and returns an authentication token.'
+security: []
+requestBody:
+  description: 'User login data'
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        required:
+          - email
+          - password
+        properties:
+          email:
+            description: "User's email"
+            type: string
+            example: 'JTestemail@gmail.com'
+          password:
+            type: string
+            minLength: 6
+            maxLength: 50
+            pattern: '^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])'
+            example: 'Example@1'
+            description: |
+              Password must be between 6 and 50 characters in length.
+              It must contain at least one uppercase letter, one number, and one special character from the following: !@#$%^&*.
+responses:
+  '200':
+    description: Logged in successfully
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - status
+            - message
+            - data
+          properties:
+            status:
+              type: integer
+              example: 200
+            message:
+              type: string
+              example: Successfully logged in a user!
+            data:
+              type: object
+              properties:
+                accessToken:
+                  type: string
+                  example: 'bseDlf/Chq0dMG6c6o194qTqA6KaFeMMt6lJZOhp'
+  '400':
+    $ref: ../../components/responses/400.yaml
+  '403':
+    $ref: ../../components/responses/403.yaml
+  '404':
+    $ref: ../../components/responses/404.yaml
+  '500':
+    $ref: ../../components/responses/500.yaml

@@ -1,0 +1,45 @@
+tags:
+  - Auth
+summary: Request verification email
+operationId: requestEmailVerification
+description: Sends an email with a verification token to the user's email address.
+security: []
+requestBody:
+  description: Email address for verification
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        required:
+          - email
+        properties:
+          email:
+            type: string
+            format: email
+            description: User's email address
+            example: JTestemail@gmail.com
+responses:
+  '200':
+    description: Verification email was successfully sent!
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - message
+            - status
+          properties:
+            message:
+              type: string
+              example: Verification email was successfully sent!
+            status:
+              type: integer
+              example: 200
+            data:
+              type: object
+              example: {}
+  '400':
+    $ref: '../../components/responses/400.yaml'
+  '500':
+    $ref: '../../components/responses/500.yaml'
