@@ -8,7 +8,7 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 import { isValidObjectId } from 'mongoose';
 
-import { ONE_HOUR, ONE_DAY, TEMPLATES_DIR } from '../constants/index.js';
+import { FIFTEEN_MINUTES, ONE_DAY, TEMPLATES_DIR } from '../constants/index.js';
 import { SessionsCollection } from '../db/models/session.js';
 import { SMTP } from '../constants/index.js';
 import { getEnvVar } from '../utils/getEnvVar.js';
@@ -26,7 +26,7 @@ const createSession = async (userId) => {
     userId,
     accessToken,
     refreshToken,
-    accessTokenValidUntil: new Date(Date.now() + ONE_HOUR),
+    accessTokenValidUntil: new Date(Date.now() + FIFTEEN_MINUTES),
     refreshTokenValidUntil: new Date(Date.now() + ONE_DAY),
   });
 
@@ -36,17 +36,26 @@ const createSession = async (userId) => {
 };
 
 export const registerUser = async (payload) => {
-  const email = payload.email.toLowerCase(); 
+  const email = payload.email.toLowerCase(); // Перевести email в нижній регістр
+
+  // Перевіряємо, чи є користувач з таким email
   const user = await UsersCollection.findOne({ email });
+
   if (user) {
+    // Якщо користувач знайдений, перевіряємо чи він верифікований
     if (user.isVerified) {
+      // Якщо email верифікований
       throw createHttpError(409, 'Email is already in use and verified');
     }
   }
+
+  // Якщо користувач не знайдений, хешуємо пароль
   const encryptedPassword = await bcrypt.hash(payload.password, 10);
+
+  // Створюємо нового користувача
   return await UsersCollection.create({
     ...payload,
-    email, 
+    email, // Записуємо email в нижньому регістрі
     password: encryptedPassword,
   });
 };
@@ -127,9 +136,15 @@ export const loginUser = async (payload) => {
   const email = payload.email.toLowerCase(); // Перевести email в нижній регістр
   const user = await UsersCollection.findOne({ email });
   if (!user) throw createHttpError(404, 'User not found');
+
+  // Перевірка, чи email верифікований
+  
+
   const isEqual = await bcrypt.compare(payload.password, user.password);
   if (!isEqual) throw createHttpError(401, 'Incorrect password');
+
   await SessionsCollection.deleteMany({ userId: user._id });
+
   return await createSession(user._id);
 };
 
