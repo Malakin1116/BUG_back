@@ -1,4 +1,3 @@
-// src/db/models/Transaction.js
 import { model, Schema } from 'mongoose';
 
 const transactionSchema = new Schema(

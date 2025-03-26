@@ -13,7 +13,7 @@
     "preview-docs": "redocly preview-docs"
   },
   "keywords": [],
-  "author": "Alexander Repeta <a.repeta@goit.global>",
+  "author": "Malyakin Bohdan <malyakinabogdan@gmail.com>",
   "license": "ISC",
   "devDependencies": {
     "@eslint/js": "^9.2.0",

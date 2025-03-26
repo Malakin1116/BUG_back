@@ -39,10 +39,8 @@ export const registerUserController = async (req, res) => {
 
 export const requestEmailVerificationController = async (req, res) => {
   try {
-    // Викликаємо функцію для генерування токену і відправлення email
-    await requestEmailVerificationToken(req.body.email);
 
-    // Відповідь клієнту
+    await requestEmailVerificationToken(req.body.email);
     res.json({
       message: 'Verification email was successfully sent!',
       status: 200,
@@ -60,10 +58,7 @@ export const requestEmailVerificationController = async (req, res) => {
 
 export const verifyEmailController = async (req, res) => {
   try {
-    // Викликаємо функцію для верифікації email
     await verifyEmail(req, res);
-
-    // Відповідь клієнту
     res.json({
       message: 'Email successfully verified!',
       status: 200,

@@ -32,13 +32,13 @@ authRouter.post(
 
 authRouter.post(
   '/verifycate',
-  validateBody(requestResetEmailSchema), // перевірка схеми для верифікації
-  ctrlWrapper(requestEmailVerificationController), // контролер для верифікації
+  validateBody(requestResetEmailSchema), 
+  ctrlWrapper(requestEmailVerificationController), 
 );
 
 authRouter.get(
   '/verifycate',
-  ctrlWrapper(verifyEmailController), // контролер для верифікації
+  ctrlWrapper(verifyEmailController), 
 );
 
 authRouter.post(

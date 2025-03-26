@@ -4,8 +4,8 @@ import { ctrlWrapper } from '../utils/ctrlWrapper.js';
 import {
   addTransactionController,
   getTransactionsTodayController,
-  getTransactionsForWeekController, // Правильна назва
-  getTransactionsForMonthController, // Правильна назва
+  getTransactionsForWeekController, 
+  getTransactionsForMonthController, 
   deleteTransactionController,
 } from '../controllers/transactions.js';
 
