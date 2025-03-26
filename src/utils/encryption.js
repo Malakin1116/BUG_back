@@ -3,13 +3,10 @@ import { getEnvVar } from './getEnvVar.js';
 
 const algorithm = 'aes-256-cbc';
 const rawKey = getEnvVar('ENCRYPTION_KEY');
-console.log('Raw ENCRYPTION_KEY:', rawKey); // Додаємо для перевірки
-console.log('Raw ENCRYPTION_KEY length:', rawKey.length); // Має бути 64
 const key = Buffer.from(rawKey, 'hex');
-console.log('Key length (bytes):', key.length); // Має бути 32
 
 export const encrypt = (text) => {
-    const iv = crypto.randomBytes(16); // Генеруємо унікальний IV для кожного шифрування
+    const iv = crypto.randomBytes(16); 
     const cipher = crypto.createCipheriv(algorithm, key, iv);
     let encrypted = cipher.update(text, 'utf8', 'hex');
     encrypted += cipher.final('hex');
