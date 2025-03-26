@@ -1,25 +1,20 @@
 import { Router } from 'express';
 import { authenticate } from '../middlewares/authenticate.js';
-import { validateBody } from '../middlewares/validateBody.js';
-import { addTransactionSchema } from '../validation/transaction.js';
+import { ctrlWrapper } from '../utils/ctrlWrapper.js';
 import {
   addTransactionController,
   getTransactionsTodayController,
+  getTransactionsForWeekController, // Правильна назва
+  getTransactionsForMonthController, // Правильна назва
   deleteTransactionController,
 } from '../controllers/transactions.js';
-import { ctrlWrapper } from '../utils/ctrlWrapper.js';
 
 const transactionsRouter = Router();
 
-transactionsRouter.post(
-  '/',
-  authenticate,
-  validateBody(addTransactionSchema),
-  ctrlWrapper(addTransactionController),
-);
-
+transactionsRouter.post('/', authenticate, ctrlWrapper(addTransactionController));
 transactionsRouter.get('/today', authenticate, ctrlWrapper(getTransactionsTodayController));
-
+transactionsRouter.get('/week', authenticate, ctrlWrapper(getTransactionsForWeekController));
+transactionsRouter.get('/month', authenticate, ctrlWrapper(getTransactionsForMonthController));
 transactionsRouter.delete('/:id', authenticate, ctrlWrapper(deleteTransactionController));
 
 export default transactionsRouter;

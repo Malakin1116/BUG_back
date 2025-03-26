@@ -17,6 +17,7 @@ import {
   getFullNameFromGoogleTokenPayload,
   validateCode,
 } from '../utils/googleOAuth2.js';
+import { encrypt} from '../utils/encryption.js';
 
 const createSession = async (userId) => {
   const accessToken = randomBytes(30).toString('base64');
@@ -36,24 +37,49 @@ const createSession = async (userId) => {
 };
 
 export const registerUser = async (payload) => {
-  const email = payload.email.toLowerCase(); // Перевести email в нижній регістр
-  const user = await UsersCollection.findOne({ email });
-
+  const email = payload.email.toLowerCase(); 
+  // Шифруємо email для пошуку в базі
+  const { encryptedData: encryptedEmail } = encrypt(email); 
+  // Шукаємо користувача за зашифрованим email
+  const user = await UsersCollection.findOne({ email: encryptedEmail });
   if (user) {
-
-    if (user.isVerified) {
+    // Дешифруємо email користувача з бази для порівняння
+    const decryptedEmail = user.decryptEmail(); // Використовуємо метод decryptEmail із моделі
+    if (user.isVerified && decryptedEmail === email) {
       throw createHttpError(409, 'Email is already in use and verified');
     }
   }
-
   const encryptedPassword = await bcrypt.hash(payload.password, 10);
-
   return await UsersCollection.create({
     ...payload,
-    email, // Записуємо email в нижньому регістрі
+    email, 
     password: encryptedPassword,
   });
 };
+
+export const loginUser = async (payload) => {
+  const email = payload.email.toLowerCase(); // Переводимо email у нижній регістр
+  // Завантажуємо всіх користувачів і шукаємо вручну
+  const users = await UsersCollection.find();
+  let existingUser = null;
+  for (const user of users) {
+    const decryptedEmail = user.decryptEmail();
+    if (decryptedEmail === email) {
+      existingUser = user;
+      break;
+    }
+  }
+  if (!existingUser) {
+    throw createHttpError(404, 'User not found');
+  }
+  const isEqual = await bcrypt.compare(payload.password, existingUser.password);
+  if (!isEqual) {
+    throw createHttpError(401, 'Incorrect password');
+  }
+  await SessionsCollection.deleteMany({ userId: existingUser._id });
+  return await createSession(existingUser._id);
+};
+
 
 export const requestEmailVerificationToken = async (email) => {
   // Перевести email в нижній регістр
@@ -127,21 +153,6 @@ export const verifyEmail = async (req, res) => {
   }
 };
 
-export const loginUser = async (payload) => {
-  const email = payload.email.toLowerCase(); // Перевести email в нижній регістр
-  const user = await UsersCollection.findOne({ email });
-  if (!user) throw createHttpError(404, 'User not found');
-
-  // Перевірка, чи email верифікований
-  
-
-  const isEqual = await bcrypt.compare(payload.password, user.password);
-  if (!isEqual) throw createHttpError(401, 'Incorrect password');
-
-  await SessionsCollection.deleteMany({ userId: user._id });
-
-  return await createSession(user._id);
-};
 
 export const logoutUser = async (sessionId) => {
   if (!isValidObjectId(sessionId)) {
