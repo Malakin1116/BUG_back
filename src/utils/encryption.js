@@ -2,9 +2,8 @@ import crypto from 'crypto';
 import { getEnvVar } from './getEnvVar.js';
 
 const algorithm = 'aes-256-cbc';
-const rawKey = getEnvVar('ENCRYPTION_KEY');
-console.log('Raw ENCRYPTION_KEY:', rawKey); // Додаємо для перевірки
-console.log('Raw ENCRYPTION_KEY length:', rawKey.length); // Має бути 64
+const rawKey = getEnvVar('ENC_KEY');
+
 const key = Buffer.from(rawKey, 'hex');
 console.log('Key length (bytes):', key.length); // Має бути 32
 
