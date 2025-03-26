@@ -1,13 +1,10 @@
-// src/controllers/transactions.js
+
 import Transaction from '../db/models/Transaction.js';
 import { UsersCollection } from '../db/models/user.js';
 
-// Додати транзакцію
 export const addTransactionController = async (req, res) => {
   const { amount, category, description, type, date } = req.body;
   const userId = req.user._id;
-
-  // Додаємо транзакцію
   const transaction = new Transaction({
     userId,
     amount,
@@ -16,38 +13,29 @@ export const addTransactionController = async (req, res) => {
     type,
     date,
   });
-
   await transaction.save();
-
-  // Оновлюємо бюджет користувача
   const transactions = await Transaction.find({ userId });
   const newBudget = transactions.reduce((total, tx) => total + tx.amount, 0);
-
   await UsersCollection.findByIdAndUpdate(userId, { budget: newBudget });
-
   res.status(201).json({ message: 'Transaction added', transaction });
 };
 
-// Отримати транзакції за день
-export const getTransactionsByDayController = async (req, res) => {
+export const getTransactionsTodayController = async (req, res) => {
   const userId = req.user._id;
-  const { date } = req.query;
-  if (!date) {
-    return res.status(400).json({ message: 'Date is required' });
-  }
-  const startOfDay = new Date(date);
+  //дата у форм "YYYY-MM-DD"
+  const today = new Date().toISOString().split('T')[0];
+  const startOfDay = new Date(today);
   startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(date);
-  endOfDay.setHours(23, 59, 59, 999);
+  const endOfDay = new Date(today);
+  endOfDay.setHours(23, 59, 59, 999); 
   const transactions = await Transaction.find({
     userId,
     date: {
-      $gte: startOfDay,
-      $lte: endOfDay,
+      $gte: startOfDay, 
+      $lte: endOfDay,   
     },
   });
-
-  res.status(200).json(transactions);
+  res.status(200).json(transactions); 
 };
 
 // Видалити транзакцію

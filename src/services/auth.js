@@ -37,22 +37,17 @@ const createSession = async (userId) => {
 
 export const registerUser = async (payload) => {
   const email = payload.email.toLowerCase(); // Перевести email в нижній регістр
-
-  // Перевіряємо, чи є користувач з таким email
   const user = await UsersCollection.findOne({ email });
 
   if (user) {
-    // Якщо користувач знайдений, перевіряємо чи він верифікований
+
     if (user.isVerified) {
-      // Якщо email верифікований
       throw createHttpError(409, 'Email is already in use and verified');
     }
   }
 
-  // Якщо користувач не знайдений, хешуємо пароль
   const encryptedPassword = await bcrypt.hash(payload.password, 10);
 
-  // Створюємо нового користувача
   return await UsersCollection.create({
     ...payload,
     email, // Записуємо email в нижньому регістрі

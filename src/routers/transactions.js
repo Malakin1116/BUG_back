@@ -4,7 +4,7 @@ import { validateBody } from '../middlewares/validateBody.js';
 import { addTransactionSchema } from '../validation/transaction.js';
 import {
   addTransactionController,
-  getTransactionsByDayController,
+  getTransactionsTodayController,
   deleteTransactionController,
 } from '../controllers/transactions.js';
 import { ctrlWrapper } from '../utils/ctrlWrapper.js';
@@ -18,7 +18,7 @@ transactionsRouter.post(
   ctrlWrapper(addTransactionController),
 );
 
-transactionsRouter.get('/today', authenticate, ctrlWrapper(getTransactionsByDayController));
+transactionsRouter.get('/today', authenticate, ctrlWrapper(getTransactionsTodayController));
 
 transactionsRouter.delete('/:id', authenticate, ctrlWrapper(deleteTransactionController));
 

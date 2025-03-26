@@ -8,12 +8,11 @@ export const registerUserSchema = Joi.object({
     'string.empty': 'Email cannot be empty',
     'any.required': 'Email is required',
   }),
-
   password: Joi.string()
     .min(6)
     .max(50)
     .trim()
-    .pattern(new RegExp('^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])'))
+    .pattern(new RegExp('^(?=.*[A-Z])(?=.*[0-9])'))
     .required()
     .messages({
       'string.base': 'Password must be a string',
@@ -21,10 +20,9 @@ export const registerUserSchema = Joi.object({
       'string.min': 'Password must be at least 6 characters long',
       'string.max': 'Password must be no longer than 50 characters',
       'string.pattern.base':
-        'Password must contain at least one uppercase letter, one number, and one special character (!@#$%^&*)',
+        'Password must contain at least one uppercase letter and one number',
       'any.required': 'Password is required',
     }),
-
   userId: Joi.string().custom((value, helper) => {
     if (value && !isValidObjectId(value)) {
       return helper.message('User ID should be a valid MongoDB ObjectId');
@@ -61,7 +59,7 @@ export const resetPasswordSchema = Joi.object({
     .min(6)
     .max(50)
     .trim()
-    .pattern(new RegExp('^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])'))
+    .pattern(new RegExp('^(?=.*[A-Z])(?=.*[0-9])'))
     .required()
     .messages({
       'string.base': 'Password must be a string',
@@ -69,7 +67,7 @@ export const resetPasswordSchema = Joi.object({
       'string.min': 'Password must be at least 6 characters long',
       'string.max': 'Password must be no longer than 50 characters',
       'string.pattern.base':
-        'Password must contain at least one uppercase letter, one number, and one special character (!@#$%^&*)',
+        'Password must contain at least one uppercase letter and one number',
       'any.required': 'Password is required',
     }),
 

@@ -7,6 +7,7 @@ const usersSchema = new Schema(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     budget: { type: Number, default: 0 }, 
+    isVerified: { type: Boolean, default: true },
   },
   { timestamps: true, versionKey: false }
 );
