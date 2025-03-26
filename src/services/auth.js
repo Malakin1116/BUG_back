@@ -8,7 +8,7 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 import { isValidObjectId } from 'mongoose';
 
-import { FIFTEEN_MINUTES, ONE_DAY, TEMPLATES_DIR } from '../constants/index.js';
+import { ONE_HOUR, ONE_DAY, TEMPLATES_DIR } from '../constants/index.js';
 import { SessionsCollection } from '../db/models/session.js';
 import { SMTP } from '../constants/index.js';
 import { getEnvVar } from '../utils/getEnvVar.js';
@@ -26,7 +26,7 @@ const createSession = async (userId) => {
     userId,
     accessToken,
     refreshToken,
-    accessTokenValidUntil: new Date(Date.now() + FIFTEEN_MINUTES),
+    accessTokenValidUntil: new Date(Date.now() + ONE_HOUR),
     refreshTokenValidUntil: new Date(Date.now() + ONE_DAY),
   });
 
@@ -36,26 +36,17 @@ const createSession = async (userId) => {
 };
 
 export const registerUser = async (payload) => {
-  const email = payload.email.toLowerCase(); // Перевести email в нижній регістр
-
-  // Перевіряємо, чи є користувач з таким email
+  const email = payload.email.toLowerCase(); 
   const user = await UsersCollection.findOne({ email });
-
   if (user) {
-    // Якщо користувач знайдений, перевіряємо чи він верифікований
     if (user.isVerified) {
-      // Якщо email верифікований
       throw createHttpError(409, 'Email is already in use and verified');
     }
   }
-
-  // Якщо користувач не знайдений, хешуємо пароль
   const encryptedPassword = await bcrypt.hash(payload.password, 10);
-
-  // Створюємо нового користувача
   return await UsersCollection.create({
     ...payload,
-    email, // Записуємо email в нижньому регістрі
+    email, 
     password: encryptedPassword,
   });
 };

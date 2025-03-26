@@ -1,4 +1,4 @@
-// src/models/Transaction.js
+// src/db/models/Transaction.js
 import { model, Schema } from 'mongoose';
 
 const transactionSchema = new Schema(
@@ -35,4 +35,6 @@ const transactionSchema = new Schema(
 
 transactionSchema.index({ userId: 1, date: 1 });
 
-export const TransactionCollection = model('Transaction', transactionSchema);
+const Transaction = model('Transaction', transactionSchema);
+
+export default Transaction;

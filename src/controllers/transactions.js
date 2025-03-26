@@ -1,8 +1,13 @@
+// src/controllers/transactions.js
 import Transaction from '../db/models/Transaction.js';
+import { UsersCollection } from '../db/models/user.js';
 
+// Додати транзакцію
 export const addTransactionController = async (req, res) => {
   const { amount, category, description, type, date } = req.body;
-  const userId = req.user._id; 
+  const userId = req.user._id;
+
+  // Додаємо транзакцію
   const transaction = new Transaction({
     userId,
     amount,
@@ -13,13 +18,20 @@ export const addTransactionController = async (req, res) => {
   });
 
   await transaction.save();
+
+  // Оновлюємо бюджет користувача
+  const transactions = await Transaction.find({ userId });
+  const newBudget = transactions.reduce((total, tx) => total + tx.amount, 0);
+
+  await UsersCollection.findByIdAndUpdate(userId, { budget: newBudget });
+
   res.status(201).json({ message: 'Transaction added', transaction });
 };
 
-
+// Отримати транзакції за день
 export const getTransactionsByDayController = async (req, res) => {
   const userId = req.user._id;
-  const { date } = req.query; 
+  const { date } = req.query;
   if (!date) {
     return res.status(400).json({ message: 'Date is required' });
   }
@@ -38,7 +50,7 @@ export const getTransactionsByDayController = async (req, res) => {
   res.status(200).json(transactions);
 };
 
-
+// Видалити транзакцію
 export const deleteTransactionController = async (req, res) => {
   const userId = req.user._id;
   const transactionId = req.params.id;
@@ -49,5 +61,12 @@ export const deleteTransactionController = async (req, res) => {
   if (!transaction) {
     return res.status(404).json({ message: 'Transaction not found' });
   }
+
+  // Оновлюємо бюджет користувача після видалення
+  const transactions = await Transaction.find({ userId });
+  const newBudget = transactions.reduce((total, tx) => total + tx.amount, 0);
+
+  await UsersCollection.findByIdAndUpdate(userId, { budget: newBudget });
+
   res.status(200).json({ message: 'Transaction deleted' });
 };
