@@ -46,6 +46,7 @@ app.use(
   app.use('/api-docs', swaggerDocs());
 
   app.use('/', router);
+ 
 
   app.get('/', (_, res) => {
     res.send('Welcome to the server!');
