@@ -7,6 +7,8 @@ import {
   getTransactionsForWeekController, 
   getTransactionsForMonthController, 
   deleteTransactionController,
+  getTransactionsForDaysMonthController,
+  getTransactionsForDaysWeekController,
 } from '../controllers/transactions.js';
 
 const transactionsRouter = Router();
@@ -16,5 +18,8 @@ transactionsRouter.get('/today', authenticate, ctrlWrapper(getTransactionsTodayC
 transactionsRouter.get('/week', authenticate, ctrlWrapper(getTransactionsForWeekController));
 transactionsRouter.get('/month', authenticate, ctrlWrapper(getTransactionsForMonthController));
 transactionsRouter.delete('/:id', authenticate, ctrlWrapper(deleteTransactionController));
+
+transactionsRouter.get('/daysWeek', authenticate, ctrlWrapper(getTransactionsForDaysWeekController));
+transactionsRouter.get('/daysMonth', authenticate, ctrlWrapper(getTransactionsForDaysMonthController));
 
 export default transactionsRouter;

@@ -51,3 +51,17 @@ export const getTransactionsForMonth = async (userId, year, month) => {
     date: { $gte: startMonth, $lte: endMonth },
   });
 };
+
+export const getTransactionsForDaysWeek = async (userId, startDate, endDate) => {
+  return await Transaction.find({
+    userId,
+    date: { $gte: new Date(startDate), $lte: new Date(endDate) },
+  });
+};
+
+export const getTransactionsForDaysMonth = async (userId, startDate, endDate) => {
+  return await Transaction.find({
+    userId,
+    date: { $gte: new Date(startDate), $lte: new Date(endDate) },
+  });
+};

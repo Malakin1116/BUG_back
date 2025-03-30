@@ -5,6 +5,9 @@ import {
   getTransactionsForToday,
   getTransactionsForWeek,
   getTransactionsForMonth,
+  getTransactionsForDaysMonth,
+  getTransactionsForDaysWeek,
+
 } from '../services/transactions.js'; // Додаємо імпорт
 
 export const addTransactionController = async (req, res) => {
@@ -45,31 +48,24 @@ export const getTransactionsTodayController = async (req, res) => {
 export const getTransactionsForWeekController = async (req, res) => {
   const userId = req.user._id;
   const { year, week } = req.query;
-
   if (!year || !week) {
     throw createHttpError(400, 'Year and week are required');
   }
-
   if (typeof year !== 'string' || typeof week !== 'string') {
     throw createHttpError(400, 'Year and week must be strings');
   }
-
   const parsedYear = parseInt(year, 10);
   const parsedWeek = parseInt(week, 10);
-
   if (isNaN(parsedYear) || isNaN(parsedWeek) || parsedWeek < 1 || parsedWeek > 53) {
     throw createHttpError(400, 'Invalid year or week');
   }
-
   const transactions = await getTransactionsForWeek(userId, parsedYear, parsedWeek);
-
   if (!transactions || transactions.length === 0) {
     return res.status(200).json({
       message: `No transactions found for requested week ${parsedYear}-W${parsedWeek}`,
       data: [],
     });
   }
-
   res.status(200).json({
     message: `Transactions for requested week ${parsedYear}-W${parsedWeek} retrieved successfully`,
     data: transactions,
@@ -124,4 +120,42 @@ export const deleteTransactionController = async (req, res) => {
   const newBudget = transactions.reduce((total, tx) => total + tx.amount, 0);
   await UsersCollection.findByIdAndUpdate(userId, { budget: newBudget });
   res.status(200).json({ message: 'Transaction deleted' });
+};
+
+export const getTransactionsForDaysWeekController = async (req, res) => {
+  const userId = req.user._id;
+  const { startDate, endDate } = req.query;
+  if (!startDate || !endDate) {
+    throw createHttpError(400, 'startDate and endDate are required');
+  }
+  const transactions = await getTransactionsForDaysWeek(userId, startDate, endDate);
+  if (!transactions || transactions.length === 0) {
+    return res.status(200).json({
+      message: `No transactions found for period ${startDate} to ${endDate}`,
+      data: [],
+    });
+  }
+  res.status(200).json({
+    message: `Transactions for period ${startDate} to ${endDate} retrieved successfully`,
+    data: transactions,
+  });
+};
+
+export const getTransactionsForDaysMonthController = async (req, res) => {
+  const userId = req.user._id;
+  const { startDate, endDate } = req.query;
+  if (!startDate || !endDate) {
+    throw createHttpError(400, 'startDate and endDate are required');
+  }
+  const transactions = await getTransactionsForDaysMonth(userId, startDate, endDate);
+  if (!transactions || transactions.length === 0) {
+    return res.status(200).json({
+      message: `No transactions found for period ${startDate} to ${endDate}`,
+      data: [],
+    });
+  }
+  res.status(200).json({
+    message: `Transactions for period ${startDate} to ${endDate} retrieved successfully`,
+    data: transactions,
+  });
 };
