@@ -1,12 +1,24 @@
 import Transaction from '../db/models/Transaction.js';
 import createHttpError from 'http-errors';
 
-export const getTransactionsForToday = async (userId) => {
-  const today = new Date().toISOString().split('T')[0];
-  const startOfDay = new Date(today);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(today);
-  endOfDay.setHours(23, 59, 59, 999);
+export const getTransactionsForToday = async (userId, dateStr) => {
+  let startOfDay, endOfDay;
+  if (dateStr) {
+    const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+    if (!datePattern.test(dateStr)) {
+      throw createHttpError(400, 'Invalid date format. Expected YYYY-MM-DD');
+    }
+    const [year, month, day] = dateStr.split('-').map(Number);
+    if (isNaN(year) || isNaN(month) || isNaN(day) || month < 1 || month > 12 || day < 1 || day > 31) {
+      throw createHttpError(400, 'Invalid date values');
+    }
+    startOfDay = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+    endOfDay = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
+  } else {
+    const today = new Date();
+    startOfDay = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 0, 0, 0, 0));
+    endOfDay = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 23, 59, 59, 999));
+  }
   return await Transaction.find({
     userId,
     date: {
