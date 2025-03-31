@@ -30,15 +30,14 @@ export const addTransactionController = async (req, res) => {
 
 export const getTransactionsTodayController = async (req, res) => {
   const userId = req.user._id;
-  const transactions = await getTransactionsForToday(userId);
-
+  const dateStr = req.query.date;
+  const transactions = await getTransactionsForToday(userId, dateStr);
   if (!transactions || transactions.length === 0) {
     return res.status(200).json({
       message: 'No transactions found for today',
       data: [],
     });
   }
-
   res.status(200).json({
     message: 'Transactions for today retrieved successfully',
     data: transactions,
