@@ -13,19 +13,35 @@ import {
 export const addTransactionController = async (req, res) => {
   const { amount, category, description, type, date } = req.body;
   const userId = req.user._id;
-  const transaction = new Transaction({
-    userId,
-    amount,
-    category,
-    description,
-    type,
-    date,
-  });
-  await transaction.save();
-  const transactions = await Transaction.find({ userId });
-  const newBudget = transactions.reduce((total, tx) => total + tx.amount, 0);
+
+  const transactionDate = new Date(date).setUTCHours(0, 0, 0, 0);
+  const newTransaction = { amount, category, description, type }; // Без createdAt, updatedAt
+
+  const userTransactions = await Transaction.findOne({ userId });
+  if (userTransactions) {
+    const dayEntry = userTransactions.transactionsByDay.find(
+      (entry) => new Date(entry.date).setUTCHours(0, 0, 0, 0) === transactionDate
+    );
+    if (dayEntry) {
+      dayEntry.transactions.push(newTransaction);
+    } else {
+      userTransactions.transactionsByDay.push({ date, transactions: [newTransaction] });
+    }
+    await userTransactions.save();
+  } else {
+    await Transaction.create({
+      userId,
+      transactionsByDay: [{ date, transactions: [newTransaction] }],
+    });
+  }
+
+  const transactions = await Transaction.findOne({ userId });
+  const newBudget = transactions.transactionsByDay
+    .flatMap((day) => day.transactions)
+    .reduce((total, tx) => total + tx.amount, 0);
   await UsersCollection.findByIdAndUpdate(userId, { budget: newBudget });
-  res.status(201).json({ message: 'Transaction added', transaction });
+
+  res.status(201).json({ message: 'Transaction added', transaction: newTransaction });
 };
 
 export const getTransactionsTodayController = async (req, res) => {
@@ -108,19 +124,39 @@ export const getTransactionsForMonthController = async (req, res) => {
 export const deleteTransactionController = async (req, res) => {
   const userId = req.user._id;
   const transactionId = req.params.id;
-  const transaction = await Transaction.findOneAndDelete({
-    _id: transactionId,
-    userId,
-  });
-  if (!transaction) {
+
+  const transactions = await Transaction.findOne({ userId });
+  if (!transactions) {
+    return res.status(404).json({ message: 'Transactions not found' });
+  }
+
+  let deleted = false;
+  for (const day of transactions.transactionsByDay) {
+    const txIndex = day.transactions.findIndex((tx) => tx._id.toString() === transactionId);
+    if (txIndex !== -1) {
+      day.transactions.splice(txIndex, 1);
+      deleted = true;
+      if (day.transactions.length === 0) {
+        transactions.transactionsByDay = transactions.transactionsByDay.filter(
+          (d) => d.date !== day.date
+        );
+      }
+      break;
+    }
+  }
+
+  if (!deleted) {
     return res.status(404).json({ message: 'Transaction not found' });
   }
-  const transactions = await Transaction.find({ userId });
-  const newBudget = transactions.reduce((total, tx) => total + tx.amount, 0);
+
+  await transactions.save();
+  const newBudget = transactions.transactionsByDay
+    .flatMap((day) => day.transactions)
+    .reduce((total, tx) => total + tx.amount, 0);
   await UsersCollection.findByIdAndUpdate(userId, { budget: newBudget });
+
   res.status(200).json({ message: 'Transaction deleted' });
 };
-
 export const getTransactionsForDaysWeekController = async (req, res) => {
   const userId = req.user._id;
   const { startDate, endDate } = req.query;
