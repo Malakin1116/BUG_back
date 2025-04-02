@@ -7,32 +7,24 @@ const transactionSchema = new Schema(
       ref: 'users',
       required: true,
     },
-    amount: {
-      type: Number,
-      required: true,
-    },
-    category: {
-      type: String,
-      required: true,
-    },
-    description: {
-      type: String,
-      default: '',
-    },
-    type: {
-      type: String,
-      enum: ['income', 'costs'],
-      required: true,
-    },
-    date: {
-      type: Date,
-      required: true,
-    },
+    transactionsByDay: [
+      {
+        date: { type: Date, required: true },
+        transactions: [
+          {
+            amount: { type: Number, required: true },
+            category: { type: String, required: true },
+            description: { type: String, default: '' },
+            type: { type: String, enum: ['income', 'costs'], required: true },
+          },
+        ],
+      },
+    ],
   },
   { timestamps: true, versionKey: false }
 );
 
-transactionSchema.index({ userId: 1, date: 1 });
+transactionSchema.index({ userId: 1, 'transactionsByDay.date': 1 });
 
 const Transaction = model('Transaction', transactionSchema);
 

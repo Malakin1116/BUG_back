@@ -2,37 +2,26 @@ import Transaction from '../db/models/Transaction.js';
 import createHttpError from 'http-errors';
 
 export const getTransactionsForToday = async (userId, dateStr) => {
-  let startOfDay, endOfDay;
-  if (dateStr) {
-    const datePattern = /^\d{4}-\d{2}-\d{2}$/;
-    if (!datePattern.test(dateStr)) {
-      throw createHttpError(400, 'Invalid date format. Expected YYYY-MM-DD');
-    }
-    const [year, month, day] = dateStr.split('-').map(Number);
-    if (isNaN(year) || isNaN(month) || isNaN(day) || month < 1 || month > 12 || day < 1 || day > 31) {
-      throw createHttpError(400, 'Invalid date values');
-    }
-    startOfDay = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
-    endOfDay = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
-  } else {
-    const today = new Date();
-    startOfDay = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 0, 0, 0, 0));
-    endOfDay = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 23, 59, 59, 999));
-  }
-  return await Transaction.find({
-    userId,
-    date: {
-      $gte: startOfDay,
-      $lte: endOfDay,
-    },
-  });
+  const startOfDay = dateStr
+    ? new Date(dateStr).setUTCHours(0, 0, 0, 0)
+    : new Date().setUTCHours(0, 0, 0, 0);
+
+  const transactions = await Transaction.findOne({ userId });
+  if (!transactions) return [];
+
+  const dayData = transactions.transactionsByDay.find(
+    (entry) => new Date(entry.date).setUTCHours(0, 0, 0, 0) === startOfDay
+  );
+  return dayData
+    ? dayData.transactions.map((tx) => ({
+        ...tx.toObject(),
+        date: dayData.date, // Додаємо дату дня
+      }))
+    : [];
 };
 
 export const getTransactionsForWeek = async (userId, year, week) => {
-  if (week < 1 || week > 53) {
-    throw createHttpError(400, 'Invalid week number');
-  }
-  const startOfYear = new Date(Date.UTC(year, 0, 1, 0, 0, 0));
+  const startOfYear = new Date(Date.UTC(year, 0, 1));
   const firstDayOfYear = startOfYear.getUTCDay();
   const daysToFirstMonday = firstDayOfYear === 0 ? 1 : 8 - firstDayOfYear;
   const startOfFirstWeek = new Date(startOfYear);
@@ -41,39 +30,69 @@ export const getTransactionsForWeek = async (userId, year, week) => {
   startOfWeek.setUTCDate(startOfFirstWeek.getUTCDate() + (week - 1) * 7);
   const endOfWeek = new Date(startOfWeek);
   endOfWeek.setUTCDate(startOfWeek.getUTCDate() + 6);
-  endOfWeek.setUTCHours(23, 59, 59, 999);
-  const startWeekISO = startOfWeek.toISOString();
-  const endWeekISO = endOfWeek.toISOString();
-  return await Transaction.find({
-    userId,
-    date: { $gte: startWeekISO, $lte: endWeekISO },
-  });
+
+  const transactions = await Transaction.findOne({ userId });
+  if (!transactions) return [];
+
+  const filteredDays = transactions.transactionsByDay
+    .filter((day) => {
+      const dayDate = new Date(day.date);
+      return dayDate >= startOfWeek && dayDate <= endOfWeek;
+    })
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  return filteredDays.flatMap((day) =>
+    day.transactions.map((tx) => ({
+      ...tx.toObject(),
+      date: day.date,
+    }))
+  );
 };
 
 export const getTransactionsForMonth = async (userId, year, month) => {
-  const parsedYear = parseInt(year, 10);
-  const parsedMonth = parseInt(month, 10);
-  if (isNaN(parsedYear) || isNaN(parsedMonth) || parsedMonth < 1 || parsedMonth > 12) {
-    throw createHttpError(400, 'Invalid year or month');
-  }
-  const startMonth = new Date(Date.UTC(parsedYear, parsedMonth - 1, 1, 0, 0, 0)).toISOString();
-  const endMonth = new Date(Date.UTC(parsedYear, parsedMonth, 0, 23, 59, 59)).toISOString();
-  return await Transaction.find({
-    userId,
-    date: { $gte: startMonth, $lte: endMonth },
-  });
+  const startMonth = new Date(Date.UTC(year, month - 1, 1));
+  const endMonth = new Date(Date.UTC(year, month, 0));
+
+  const transactions = await Transaction.findOne({ userId });
+  if (!transactions) return [];
+
+  const filteredDays = transactions.transactionsByDay
+    .filter((day) => {
+      const dayDate = new Date(day.date);
+      return dayDate >= startMonth && dayDate <= endMonth;
+    })
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  return filteredDays.flatMap((day) =>
+    day.transactions.map((tx) => ({
+      ...tx.toObject(),
+      date: day.date,
+    }))
+  );
 };
 
 export const getTransactionsForDaysWeek = async (userId, startDate, endDate) => {
-  return await Transaction.find({
-    userId,
-    date: { $gte: new Date(startDate), $lte: new Date(endDate) },
-  });
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  const transactions = await Transaction.findOne({ userId });
+  if (!transactions) return [];
+
+  const filteredDays = transactions.transactionsByDay
+    .filter((day) => {
+      const dayDate = new Date(day.date);
+      return dayDate >= start && dayDate <= end;
+    })
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  return filteredDays.flatMap((day) =>
+    day.transactions.map((tx) => ({
+      ...tx.toObject(),
+      date: day.date,
+    }))
+  );
 };
 
 export const getTransactionsForDaysMonth = async (userId, startDate, endDate) => {
-  return await Transaction.find({
-    userId,
-    date: { $gte: new Date(startDate), $lte: new Date(endDate) },
-  });
+  return getTransactionsForDaysWeek(userId, startDate, endDate);
 };
