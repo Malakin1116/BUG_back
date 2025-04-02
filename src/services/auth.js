@@ -180,20 +180,15 @@ export const refreshUsersSession = async ({ sessionId, refreshToken }) => {
   if (!isValidObjectId(sessionId)) {
     throw createHttpError(400, 'Invalid session ID');
   }
-
   const session = await SessionsCollection.findOne({
     _id: sessionId,
     refreshToken,
   });
-
   if (!session) throw createHttpError(401, 'Session not found');
-
   if (new Date() > new Date(session.refreshTokenValidUntil)) {
     throw createHttpError(401, 'Session token expired');
   }
-
   await SessionsCollection.deleteOne({ _id: sessionId, refreshToken });
-
   return await createSession(session.userId);
 };
 
