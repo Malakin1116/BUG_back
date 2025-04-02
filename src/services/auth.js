@@ -17,7 +17,9 @@ import {
   getFullNameFromGoogleTokenPayload,
   validateCode,
 } from '../utils/googleOAuth2.js';
-import { encrypt} from '../utils/encryption.js';
+// import { encrypt } from '../utils/encryption.js'; // Виправлено імпорт
+import { createHash } from 'crypto';
+import { encrypt } from '../utils/encryption.js';
 
 const createSession = async (userId) => {
   const accessToken = randomBytes(30).toString('base64');
@@ -37,24 +39,41 @@ const createSession = async (userId) => {
 };
 
 export const registerUser = async (payload) => {
-  const email = payload.email.toLowerCase(); 
-  // Шифруємо email для пошуку в базі
-  const { encryptedData: encryptedEmail } = encrypt(email); 
-  // Шукаємо користувача за зашифрованим email
-  const user = await UsersCollection.findOne({ email: encryptedEmail });
-  if (user) {
-    // Дешифруємо email користувача з бази для порівняння
-    const decryptedEmail = user.decryptEmail(); // Використовуємо метод decryptEmail із моделі
-    if (user.isVerified && decryptedEmail === email) {
-      throw createHttpError(409, 'Email is already in use and verified');
+  const { email, password, budget, budgetStartDate } = payload;
+  const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d).{6,}$/;
+  if (!passwordRegex.test(password)) {
+    throw new Error('Password must be at least 6 characters long and contain at least one letter and one number');
+  }
+  const normalizedEmail = email.toLowerCase();
+  const encryptedPassword = await bcrypt.hash(password, 10);
+  const emailHash = createHash('sha256')
+    .update(normalizedEmail)
+    .digest('hex');
+  const { iv, encryptedData } = encrypt(normalizedEmail);
+  let initialBudget = 0;
+  if (budget !== undefined) {
+    initialBudget = Number(budget);
+    if (isNaN(initialBudget)) {
+      throw new Error('Budget must be a valid number');
     }
   }
-  const encryptedPassword = await bcrypt.hash(payload.password, 10);
-  return await UsersCollection.create({
+  let startDate = null;
+  if (budgetStartDate) {
+    startDate = new Date(budgetStartDate);
+    if (isNaN(startDate.getTime())) {
+      throw new Error('Budget start date must be a valid date');
+    }
+  }
+  const user = await UsersCollection.create({
     ...payload,
-    email, 
+    email: encryptedData,
+    emailHash,
+    emailIV: iv,
     password: encryptedPassword,
+    budget: initialBudget,
+    budgetStartDate: startDate,
   });
+  return user;
 };
 
 export const loginUser = async (payload) => {
@@ -80,12 +99,20 @@ export const loginUser = async (payload) => {
   return await createSession(existingUser._id);
 };
 
-
 export const requestEmailVerificationToken = async (email) => {
   // Перевести email в нижній регістр
   email = email.toLowerCase();
 
-  const user = await UsersCollection.findOne({ email });
+  // Шукаємо користувача по email
+  const users = await UsersCollection.find();
+  let user = null;
+  for (const u of users) {
+    const decryptedEmail = u.decryptEmail();
+    if (decryptedEmail === email) {
+      user = u;
+      break;
+    }
+  }
   if (!user) throw createHttpError(404, 'User not found');
 
   // Перевірка, чи користувач уже підтвердив свою пошту
@@ -122,37 +149,25 @@ export const requestEmailVerificationToken = async (email) => {
   });
 };
 
-export const verifyEmail = async (req, res) => {
+export const verifyEmail = async (req) => {
   const { token } = req.query; // Токен, що передається через параметр запиту
 
-  try {
-    // Верифікація токена
-    const decoded = jwt.verify(token, getEnvVar('JWT_SECRET'));
+  // Верифікація токена
+  const decoded = jwt.verify(token, getEnvVar('JWT_SECRET'));
 
-    // Знаходимо користувача за ID, який міститься в токені
-    const user = await UsersCollection.findById(decoded.sub);
-    if (!user) throw createHttpError(404, 'User not found');
+  // Знаходимо користувача за ID, який міститься в токені
+  const user = await UsersCollection.findById(decoded.sub);
+  if (!user) throw createHttpError(404, 'User not found');
 
-    // Перевіряємо, чи користувач вже підтвердив свою email адресу
-    if (user.isVerified) {
-      throw createHttpError(400, 'Email already verified');
-    }
-
-    // Оновлюємо статус користувача на підтверджений
-    user.isVerified = true;
-    await user.save(); // Зберігаємо зміни в базі
-
-    // Відповідь для користувача
-    res.json({
-      status: 200,
-      message: 'Email successfully verified',
-    });
-  } catch {
-    // Помилка при верифікації токена
-    throw createHttpError(400, 'Invalid or expired verification token');
+  // Перевіряємо, чи користувач вже підтвердив свою email адресу
+  if (user.isVerified) {
+    throw createHttpError(400, 'Email already verified');
   }
-};
 
+  // Оновлюємо статус користувача на підтверджений
+  user.isVerified = true;
+  await user.save(); // Зберігаємо зміни в базі
+};
 
 export const logoutUser = async (sessionId) => {
   if (!isValidObjectId(sessionId)) {
@@ -183,7 +198,16 @@ export const refreshUsersSession = async ({ sessionId, refreshToken }) => {
 };
 
 export const requestResetToken = async (email) => {
-  const user = await UsersCollection.findOne({ email });
+  // Шукаємо користувача по email
+  const users = await UsersCollection.find();
+  let user = null;
+  for (const u of users) {
+    const decryptedEmail = u.decryptEmail();
+    if (decryptedEmail === email.toLowerCase()) {
+      user = u;
+      break;
+    }
+  }
   if (!user) throw createHttpError(404, 'User not found');
 
   const resetToken = jwt.sign(
@@ -212,16 +236,6 @@ export const requestResetToken = async (email) => {
   });
 };
 
-export const requestResetPwdController = async (req, res) => {
-  await requestResetToken(req.body.email);
-
-  res.json({
-    status: 200,
-    message: 'Reset password email has been successfully sent.',
-    data: {},
-  });
-};
-
 export const resetPassword = async (payload) => {
   let entries;
   try {
@@ -231,7 +245,6 @@ export const resetPassword = async (payload) => {
   }
 
   const user = await UsersCollection.findOne({
-    email: entries.email,
     _id: entries.sub,
   });
 
@@ -250,7 +263,16 @@ export const loginOrSignupWithGoogle = async (code) => {
   const payload = loginTicket.getPayload();
   if (!payload) throw createHttpError(401);
 
-  let user = await UsersCollection.findOne({ email: payload.email });
+  let user = null;
+  const users = await UsersCollection.find();
+  for (const u of users) {
+    const decryptedEmail = u.decryptEmail();
+    if (decryptedEmail === payload.email.toLowerCase()) {
+      user = u;
+      break;
+    }
+  }
+
   if (!user) {
     const password = await bcrypt.hash(randomBytes(10).toString('hex'), 10);
     user = await UsersCollection.create({

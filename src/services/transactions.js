@@ -1,5 +1,4 @@
 import Transaction from '../db/models/Transaction.js';
-import createHttpError from 'http-errors';
 
 export const getTransactionsForToday = async (userId, dateStr) => {
   const startOfDay = dateStr
@@ -95,4 +94,20 @@ export const getTransactionsForDaysWeek = async (userId, startDate, endDate) => 
 
 export const getTransactionsForDaysMonth = async (userId, startDate, endDate) => {
   return getTransactionsForDaysWeek(userId, startDate, endDate);
+};
+
+export const getAllTransactions = async (userId) => {
+  const transactions = await Transaction.findOne({ userId });
+  if (!transactions) return [];
+
+  const sortedDays = transactions.transactionsByDay.sort(
+    (a, b) => new Date(a.date) - new Date(b.date)
+  );
+
+  return sortedDays.flatMap((day) =>
+    day.transactions.map((tx) => ({
+      ...tx.toObject(),
+      date: day.date,
+    }))
+  );
 };

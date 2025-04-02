@@ -7,16 +7,18 @@ import {
   getTransactionsForMonth,
   getTransactionsForDaysMonth,
   getTransactionsForDaysWeek,
-
-} from '../services/transactions.js'; // Додаємо імпорт
+  getAllTransactions,
+} from '../services/transactions.js'; 
 
 export const addTransactionController = async (req, res) => {
   const { amount, category, description, type, date } = req.body;
   const userId = req.user._id;
-
   const transactionDate = new Date(date).setUTCHours(0, 0, 0, 0);
-  const newTransaction = { amount, category, description, type }; // Без createdAt, updatedAt
-
+  const newTransaction = { amount, category, description, type };
+  const user = await UsersCollection.findById(userId);
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
   const userTransactions = await Transaction.findOne({ userId });
   if (userTransactions) {
     const dayEntry = userTransactions.transactionsByDay.find(
@@ -34,11 +36,19 @@ export const addTransactionController = async (req, res) => {
       transactionsByDay: [{ date, transactions: [newTransaction] }],
     });
   }
-
   const transactions = await Transaction.findOne({ userId });
   const newBudget = transactions.transactionsByDay
+    .filter((day) => !user.budgetStartDate || new Date(day.date) >= new Date(user.budgetStartDate))
     .flatMap((day) => day.transactions)
-    .reduce((total, tx) => total + tx.amount, 0);
+    .reduce((total, tx) => {
+      if (tx.type === 'costs') {
+        return total - tx.amount; 
+      } else if (tx.type === 'income') {
+        return total + tx.amount;
+      }
+      return total;
+    }, user.budget || 0);
+
   await UsersCollection.findByIdAndUpdate(userId, { budget: newBudget });
 
   res.status(201).json({ message: 'Transaction added', transaction: newTransaction });
@@ -191,6 +201,23 @@ export const getTransactionsForDaysMonthController = async (req, res) => {
   }
   res.status(200).json({
     message: `Transactions for period ${startDate} to ${endDate} retrieved successfully`,
+    data: transactions,
+  });
+};
+
+export const getAllTransactionsController = async (req, res) => {
+  const userId = req.user._id;
+  const transactions = await getAllTransactions(userId);
+
+  if (!transactions || transactions.length === 0) {
+    return res.status(200).json({
+      message: 'No transactions found for this user',
+      data: [],
+    });
+  }
+
+  res.status(200).json({
+    message: 'All transactions retrieved successfully',
     data: transactions,
   });
 };
