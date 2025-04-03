@@ -17,7 +17,7 @@ const setupSession = (res, session) => {
   res.cookie('refreshToken', session.refreshToken, {
     httpOnly: true,
     sameSite: 'None',
-    secure: false, // Обов’язково для HTTPS
+    secure: true, // Обов’язково для HTTPS
     expires: new Date(Date.now() + ONE_DAY),
   });
   res.cookie('sessionId', session._id, {
@@ -126,26 +126,18 @@ export const logoutUserController = async (req, res) => {
 };
 
 export const refreshUserSessionController = async (req, res) => {
-  try {
-    console.log('Cookies:', req.cookies);
-    const session = await refreshUsersSession({
-      sessionId: req.cookies.sessionId,
-      refreshToken: req.cookies.refreshToken,
-    });
-    setupSession(res, session);
-    res.json({
-      status: 200,
-      message: 'Successfully refreshed a session!',
-      data: {
-        accessToken: session.accessToken,
-      },
-    });
-  } catch (error) {
-    res.status(error.status || 500).json({
-      status: error.status || 500,
-      message: error.message || 'Server error',
-    });
-  }
+  const session = await refreshUsersSession({
+    sessionId: req.cookies.sessionId,
+    refreshToken: req.cookies.refreshToken,
+  });
+  setupSession(res, session);
+  res.json({
+    status: 200,
+    message: 'Successfully refreshed a session!',
+    data: {
+      accessToken: session.accessToken,
+    },
+  });
 };
 
 export const requestResetPwdController = async (req, res) => {
