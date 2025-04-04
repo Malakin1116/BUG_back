@@ -17,7 +17,7 @@ const setupSession = (res, session) => {
   res.cookie('refreshToken', session.refreshToken, {
     httpOnly: true,
     sameSite: 'None',
-    secure: true, // Обов’язково для HTTPS
+    secure: false, // Обов’язково для HTTPS
     expires: new Date(Date.now() + ONE_DAY),
   });
   res.cookie('sessionId', session._id, {
