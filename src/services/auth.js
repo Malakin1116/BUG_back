@@ -238,15 +238,11 @@ export const resetPassword = async (payload) => {
   } catch (err) {
     throw createHttpError(401, err.message);
   }
-
   const user = await UsersCollection.findOne({
     _id: entries.sub,
   });
-
   if (!user) throw createHttpError(404, 'User not found');
-
   const encryptedPassword = await bcrypt.hash(payload.password, 10);
-
   await UsersCollection.updateOne(
     { _id: user._id },
     { password: encryptedPassword },
