@@ -17,13 +17,13 @@ const setupSession = (res, session) => {
   res.cookie('refreshToken', session.refreshToken, {
     httpOnly: true,
     sameSite: 'None',
-    secure: true, // Локально можна використовувати secure: true
+    secure: true, // Обов’язково для HTTPS
     expires: new Date(Date.now() + ONE_DAY),
   });
   res.cookie('sessionId', session._id, {
     httpOnly: true,
     sameSite: 'None',
-    secure: true, // Локально можна використовувати secure: false
+    secure: true, // Обов’язково для HTTPS
     expires: new Date(Date.now() + ONE_DAY),
   });
 };
