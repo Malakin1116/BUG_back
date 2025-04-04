@@ -46,7 +46,6 @@ export const patchUserController = async (req, res, next) => {
 export const getUserByIdController = async (req, res, next) => {
   try {
     const userId = req.user._id;
-
     const user = await getUserById(userId);
     if (!user) {
       return next(createHttpError(404, 'User not found'));
