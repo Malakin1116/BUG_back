@@ -36,21 +36,6 @@ export const addTransactionController = async (req, res) => {
       transactionsByDay: [{ date, transactions: [newTransaction] }],
     });
   }
-  const transactions = await Transaction.findOne({ userId });
-  const newBudget = transactions.transactionsByDay
-    .filter((day) => !user.budgetStartDate || new Date(day.date) >= new Date(user.budgetStartDate))
-    .flatMap((day) => day.transactions)
-    .reduce((total, tx) => {
-      if (tx.type === 'costs') {
-        return total - tx.amount; 
-      } else if (tx.type === 'income') {
-        return total + tx.amount;
-      }
-      return total;
-    }, user.budget || 0);
-
-  await UsersCollection.findByIdAndUpdate(userId, { budget: newBudget });
-
   res.status(201).json({ message: 'Transaction added', transaction: newTransaction });
 };
 
@@ -154,19 +139,13 @@ export const deleteTransactionController = async (req, res) => {
       break;
     }
   }
-
   if (!deleted) {
     return res.status(404).json({ message: 'Transaction not found' });
   }
-
   await transactions.save();
-  const newBudget = transactions.transactionsByDay
-    .flatMap((day) => day.transactions)
-    .reduce((total, tx) => total + tx.amount, 0);
-  await UsersCollection.findByIdAndUpdate(userId, { budget: newBudget });
-
   res.status(200).json({ message: 'Transaction deleted' });
 };
+
 export const getTransactionsForDaysWeekController = async (req, res) => {
   const userId = req.user._id;
   const { startDate, endDate } = req.query;
@@ -220,4 +199,14 @@ export const getAllTransactionsController = async (req, res) => {
     message: 'All transactions retrieved successfully',
     data: transactions,
   });
+};
+
+export const deleteAllTransactionsController = async (req, res) => {
+  const userId = req.user._id;
+  const userTransactions = await Transaction.findOne({ userId });
+  if (!userTransactions) {
+    return res.status(404).json({ message: 'Transactions not found' });
+  }
+  await Transaction.deleteOne({ userId });
+  res.status(200).json({ message: 'All transactions deleted' });
 };
