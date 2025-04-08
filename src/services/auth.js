@@ -95,6 +95,10 @@ export const loginUser = async (payload) => {
   if (!isEqual) {
     throw createHttpError(401, 'Incorrect password');
   }
+  // Додаємо перевірку верифікації email
+  if (!existingUser.isVerified) {
+    throw createHttpError(403, 'Email not verified. Please verify your email to log in.');
+  }
   await SessionsCollection.deleteMany({ userId: existingUser._id });
   return await createSession(existingUser._id);
 };
