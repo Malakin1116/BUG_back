@@ -1,3 +1,4 @@
+// Backend: validation/auth.js
 import Joi from 'joi';
 import { isValidObjectId } from 'mongoose';
 
@@ -70,7 +71,6 @@ export const resetPasswordSchema = Joi.object({
         'Password must contain at least one uppercase letter and one number',
       'any.required': 'Password is required',
     }),
-
   token: Joi.string().trim().required().messages({
     'string.base': 'Token must be a string',
     'string.empty': 'Token cannot be empty',
@@ -80,4 +80,13 @@ export const resetPasswordSchema = Joi.object({
 
 export const loginWithGoogleOAuthSchema = Joi.object({
   code: Joi.string().required(),
+});
+
+// Додаємо схему для валідації квитанції
+export const validateReceiptSchema = Joi.object({
+  receipt: Joi.string().required().messages({
+    'string.base': 'Receipt must be a string',
+    'string.empty': 'Receipt cannot be empty',
+    'any.required': 'Receipt is required',
+  }),
 });

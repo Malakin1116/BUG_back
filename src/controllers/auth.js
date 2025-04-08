@@ -1,3 +1,4 @@
+
 import {
   registerUser,
   loginUser,
@@ -8,22 +9,23 @@ import {
   loginOrSignupWithGoogle,
   requestEmailVerificationToken,
   verifyEmail,
+  validateReceipt,
+  getPremiumStatus,
 } from '../services/auth.js';
 import { ONE_DAY } from '../constants/index.js';
 import { generateAuthUrl } from '../utils/googleOAuth2.js';
-
 
 const setupSession = (res, session) => {
   res.cookie('refreshToken', session.refreshToken, {
     httpOnly: true,
     sameSite: 'None',
-    secure: true, // Обов’язково для HTTPS
+    secure: true,
     expires: new Date(Date.now() + ONE_DAY),
   });
   res.cookie('sessionId', session._id, {
     httpOnly: true,
     sameSite: 'None',
-    secure: true, // Обов’язково для HTTPS
+    secure: true,
     expires: new Date(Date.now() + ONE_DAY),
   });
 };
@@ -56,7 +58,7 @@ export const registerUserController = async (req, res) => {
       message: error.message || 'Server error',
     });
   }
-};;
+};
 
 export const requestEmailVerificationController = async (req, res) => {
   try {
@@ -207,4 +209,30 @@ export const loginWithGoogleController = async (req, res) => {
       message: error.message || 'Server error',
     });
   }
+};
+
+// Додаємо контролери для преміум-підписки
+export const validateReceiptController = async (req, res) => {
+  const userId = req.user._id;
+  const { receipt } = req.body;
+
+  const { isPremium, expirationDate } = await validateReceipt(userId, receipt);
+
+  res.status(200).json({
+    message: 'Receipt validated',
+    premiumStatus: isPremium,
+    premiumExpiration: expirationDate,
+  });
+};
+
+export const getPremiumStatusController = async (req, res) => {
+  const userId = req.user._id;
+
+  const { premiumStatus, premiumExpiration } = await getPremiumStatus(userId);
+
+  res.status(200).json({
+    message: 'Premium status retrieved',
+    premiumStatus,
+    premiumExpiration,
+  });
 };

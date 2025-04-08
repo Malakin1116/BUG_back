@@ -17,6 +17,8 @@ const usersSchema = new Schema(
     budgetStartDate: { type: Date, required: false }, // Дата початку підрахунку бюджету
     isVerified: { type: Boolean, default: true },
     emailIV: { type: String, required: false },
+    premiumStatus: { type: Boolean, default: false }, // Статус преміум-підписки
+    premiumExpiration: { type: Date, required: false },
   },
   { timestamps: true, versionKey: false }
 );
