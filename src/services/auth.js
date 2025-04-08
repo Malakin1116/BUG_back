@@ -1,3 +1,4 @@
+// Backend: services/auth.js
 import { UsersCollection } from '../db/models/user.js';
 import { randomBytes } from 'crypto';
 import bcrypt from 'bcrypt';
@@ -7,6 +8,7 @@ import handlebars from 'handlebars';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import { isValidObjectId } from 'mongoose';
+import axios from 'axios';
 
 import { FIFTEEN_MINUTES, ONE_DAY, TEMPLATES_DIR } from '../constants/index.js';
 import { SessionsCollection } from '../db/models/session.js';
@@ -17,9 +19,8 @@ import {
   getFullNameFromGoogleTokenPayload,
   validateCode,
 } from '../utils/googleOAuth2.js';
-// import { encrypt } from '../utils/encryption.js'; // Виправлено імпорт
-import { createHash } from 'crypto';
 import { encrypt } from '../utils/encryption.js';
+import { createHash } from 'crypto';
 
 const createSession = async (userId) => {
   const accessToken = randomBytes(30).toString('base64');
@@ -77,8 +78,7 @@ export const registerUser = async (payload) => {
 };
 
 export const loginUser = async (payload) => {
-  const email = payload.email.toLowerCase(); // Переводимо email у нижній регістр
-  // Завантажуємо всіх користувачів і шукаємо вручну
+  const email = payload.email.toLowerCase();
   const users = await UsersCollection.find();
   let existingUser = null;
   for (const user of users) {
@@ -100,10 +100,7 @@ export const loginUser = async (payload) => {
 };
 
 export const requestEmailVerificationToken = async (email) => {
-  // Перевести email в нижній регістр
   email = email.toLowerCase();
-
-  // Шукаємо користувача по email
   const users = await UsersCollection.find();
   let user = null;
   for (const u of users) {
@@ -114,8 +111,6 @@ export const requestEmailVerificationToken = async (email) => {
     }
   }
   if (!user) throw createHttpError(404, 'User not found');
-
-  // Перевірка, чи користувач уже підтвердив свою пошту
   if (user.isVerified) {
     throw createHttpError(400, 'Email already verified');
   }
@@ -150,23 +145,15 @@ export const requestEmailVerificationToken = async (email) => {
 };
 
 export const verifyEmail = async (req) => {
-  const { token } = req.query; // Токен, що передається через параметр запиту
-
-  // Верифікація токена
+  const { token } = req.query;
   const decoded = jwt.verify(token, getEnvVar('JWT_SECRET'));
-
-  // Знаходимо користувача за ID, який міститься в токені
   const user = await UsersCollection.findById(decoded.sub);
   if (!user) throw createHttpError(404, 'User not found');
-
-  // Перевіряємо, чи користувач вже підтвердив свою email адресу
   if (user.isVerified) {
     throw createHttpError(400, 'Email already verified');
   }
-
-  // Оновлюємо статус користувача на підтверджений
   user.isVerified = true;
-  await user.save(); // Зберігаємо зміни в базі
+  await user.save();
 };
 
 export const logoutUser = async (sessionId) => {
@@ -193,7 +180,6 @@ export const refreshUsersSession = async ({ sessionId, refreshToken }) => {
 };
 
 export const requestResetToken = async (email) => {
-  // Шукаємо користувача по email
   const users = await UsersCollection.find();
   let user = null;
   for (const u of users) {
@@ -276,4 +262,67 @@ export const loginOrSignupWithGoogle = async (code) => {
   await SessionsCollection.deleteMany({ userId: user._id });
 
   return await createSession(user._id);
+};
+
+// Додаємо сервіс для валідації квитанції
+export const validateReceipt = async (userId, receipt) => {
+  if (!receipt) {
+    throw createHttpError(400, 'Receipt is required');
+  }
+
+  try {
+    const response = await axios.post('https://buy.itunes.apple.com/verifyReceipt', {
+      'receipt-data': receipt,
+      'password': 'your-shared-secret', // Заміни на Shared Secret з App Store Connect
+      'exclude-old-transactions': true,
+    });
+
+    const receiptData = response.data;
+
+    if (receiptData.status !== 0) {
+      throw createHttpError(400, 'Invalid receipt');
+    }
+
+    const latestReceiptInfo = receiptData.latest_receipt_info || [];
+    let isPremium = false;
+    let expirationDate = null;
+
+    for (const transaction of latestReceiptInfo) {
+      if (transaction.product_id === 'premium_monthly_2025') { // Заміни на твій Product ID
+        const expiresDateMs = parseInt(transaction.expires_date_ms, 10);
+        const nowMs = Date.now();
+        if (expiresDateMs > nowMs) {
+          isPremium = true;
+          expirationDate = new Date(expiresDateMs);
+          break;
+        }
+      }
+    }
+
+    await UsersCollection.findByIdAndUpdate(userId, {
+      premiumStatus: isPremium,
+      premiumExpiration: expirationDate,
+    });
+
+    return { isPremium, expirationDate };
+  } catch (error) {
+    console.error('Receipt validation error:', error);
+    throw createHttpError(500, 'Failed to validate receipt');
+  }
+};
+
+// Додаємо сервіс для перевірки статусу преміум-підписки
+export const getPremiumStatus = async (userId) => {
+  const user = await UsersCollection.findById(userId);
+  if (!user) {
+    throw createHttpError(404, 'User not found');
+  }
+
+  const now = new Date();
+  const isPremium = user.premiumStatus && user.premiumExpiration && new Date(user.premiumExpiration) > now;
+
+  return {
+    premiumStatus: isPremium,
+    premiumExpiration: user.premiumExpiration,
+  };
 };
