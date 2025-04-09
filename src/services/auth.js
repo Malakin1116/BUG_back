@@ -1,4 +1,3 @@
-// Backend: services/auth.js
 import { UsersCollection } from '../db/models/user.js';
 import { randomBytes } from 'crypto';
 import bcrypt from 'bcrypt';
@@ -95,7 +94,6 @@ export const loginUser = async (payload) => {
   if (!isEqual) {
     throw createHttpError(401, 'Incorrect password');
   }
-  // Додаємо перевірку верифікації email
   if (!existingUser.isVerified) {
     throw createHttpError(403, 'Email not verified. Please verify your email to log in.');
   }
@@ -137,7 +135,7 @@ export const requestEmailVerificationToken = async (email) => {
   const template = handlebars.compile(templateSource);
   const html = template({
     name: user.name,
-    link: `${getEnvVar('APP_DOMAIN')}/signin?token=${verificationToken}`,
+    link: `${getEnvVar('APP_DOMAIN')}/auth/verify-email?token=${verificationToken}`,
   });
 
   await sendEmail({
@@ -146,6 +144,16 @@ export const requestEmailVerificationToken = async (email) => {
     subject: 'Verify your email',
     html,
   });
+};
+
+// Нова функція для завантаження шаблону verified-email.html
+export const getVerifiedEmailTemplate = async () => {
+  const verifiedEmailTemplatePath = path.join(
+    TEMPLATES_DIR,
+    'verified-email.html',
+  );
+  const templateSource = await fs.readFile(verifiedEmailTemplatePath, 'utf-8');
+  return templateSource;
 };
 
 export const verifyEmail = async (req) => {
@@ -268,7 +276,6 @@ export const loginOrSignupWithGoogle = async (code) => {
   return await createSession(user._id);
 };
 
-// Додаємо сервіс для валідації квитанції
 export const validateReceipt = async (userId, receipt) => {
   if (!receipt) {
     throw createHttpError(400, 'Receipt is required');
@@ -277,7 +284,7 @@ export const validateReceipt = async (userId, receipt) => {
   try {
     const response = await axios.post('https://buy.itunes.apple.com/verifyReceipt', {
       'receipt-data': receipt,
-      'password': 'your-shared-secret', // Заміни на Shared Secret з App Store Connect
+      'password': 'your-shared-secret',
       'exclude-old-transactions': true,
     });
 
@@ -292,7 +299,7 @@ export const validateReceipt = async (userId, receipt) => {
     let expirationDate = null;
 
     for (const transaction of latestReceiptInfo) {
-      if (transaction.product_id === 'premium_monthly_2025') { // Заміни на твій Product ID
+      if (transaction.product_id === 'premium_monthly_2025') {
         const expiresDateMs = parseInt(transaction.expires_date_ms, 10);
         const nowMs = Date.now();
         if (expiresDateMs > nowMs) {
@@ -315,7 +322,6 @@ export const validateReceipt = async (userId, receipt) => {
   }
 };
 
-// Додаємо сервіс для перевірки статусу преміум-підписки
 export const getPremiumStatus = async (userId) => {
   const user = await UsersCollection.findById(userId);
   if (!user) {
