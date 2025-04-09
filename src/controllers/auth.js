@@ -11,6 +11,7 @@ import {
   verifyEmail,
   validateReceipt,
   getPremiumStatus,
+  getVerifiedEmailTemplate,
 } from '../services/auth.js';
 import { ONE_DAY } from '../constants/index.js';
 import { generateAuthUrl } from '../utils/googleOAuth2.js';
@@ -81,11 +82,9 @@ export const requestEmailVerificationController = async (req, res) => {
 export const verifyEmailController = async (req, res) => {
   try {
     await verifyEmail(req);
-    res.json({
-      message: 'Email successfully verified!',
-      status: 200,
-      data: {},
-    });
+    const templateSource = await getVerifiedEmailTemplate();
+    res.setHeader('Content-Type', 'text/html');
+    res.status(200).send(templateSource);
   } catch (error) {
     res.status(error.status || 400).json({
       message: error.message || 'Invalid or expired verification token',
