@@ -15,28 +15,62 @@ export const addTransactionController = async (req, res) => {
   const userId = req.user._id;
   const transactionDate = new Date(date).setUTCHours(0, 0, 0, 0);
   const newTransaction = { amount, category, description, type };
+
   const user = await UsersCollection.findById(userId);
   if (!user) {
     return res.status(404).json({ message: 'User not found' });
   }
-  const userTransactions = await Transaction.findOne({ userId });
+
+  let userTransactions = await Transaction.findOne({ userId });
+  let savedTransaction;
+
   if (userTransactions) {
     const dayEntry = userTransactions.transactionsByDay.find(
       (entry) => new Date(entry.date).setUTCHours(0, 0, 0, 0) === transactionDate
     );
+
     if (dayEntry) {
+      // Додаємо транзакцію до існуючого дня
       dayEntry.transactions.push(newTransaction);
     } else {
+      // Додаємо новий день із транзакцією
       userTransactions.transactionsByDay.push({ date, transactions: [newTransaction] });
     }
+
     await userTransactions.save();
+
+    // Оновлюємо userTransactions після збереження
+    userTransactions = await Transaction.findOne({ userId });
+
+    // Знаходимо щойно додану транзакцію
+    const updatedDayEntry = userTransactions.transactionsByDay.find(
+      (entry) => new Date(entry.date).setUTCHours(0, 0, 0, 0) === transactionDate
+    );
+    savedTransaction = updatedDayEntry.transactions[updatedDayEntry.transactions.length - 1];
   } else {
-    await Transaction.create({
+    // Створюємо нову транзакцію для користувача
+    userTransactions = await Transaction.create({
       userId,
       transactionsByDay: [{ date, transactions: [newTransaction] }],
     });
+
+    const createdDayEntry = userTransactions.transactionsByDay.find(
+      (entry) => new Date(entry.date).setUTCHours(0, 0, 0, 0) === transactionDate
+    );
+    savedTransaction = createdDayEntry.transactions[0];
   }
-  res.status(201).json({ message: 'Transaction added', transaction: newTransaction });
+
+  // Формуємо повний об’єкт транзакції для відповіді
+  const transactionResponse = {
+    _id: savedTransaction._id.toString(),
+    amount: savedTransaction.amount,
+    category: savedTransaction.category,
+    description: savedTransaction.description,
+    type: savedTransaction.type,
+    date: new Date(date).toISOString(),
+  };
+
+  res.status(201).json({ message: 'Transaction added', transaction: transactionResponse });
 };
 
 export const getTransactionsTodayController = async (req, res) => {
